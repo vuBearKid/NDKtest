@@ -5,10 +5,10 @@ package link.vu1984.ndk;
  */
 public class VUCpp {
     static {
-        System.loadLibrary("VUNative");
+        System.loadLibrary("VUNative");//这个名字必须和build.gradle  ndk{moduleName "VUNative"}一样
     }
 
-    public static native int VUadd(int a,int b);
+    public static native int VUadd(int a,int b);//如果为红色，Alt+Enter第一行
 
     public static native String StrFromJni(int which);
 

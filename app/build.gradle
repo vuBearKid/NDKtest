@@ -19,13 +19,13 @@ model{
             versionCode 1
             versionName "1.0"
 
-            buildConfigFields {
+            /*buildConfigFields {//这个还不知道有什么用
                 create() {
                     type "int"
                     name "VALUE"
                     value "1"
                 }
-            }
+            }*/
 
         }
 
@@ -47,7 +47,7 @@ model{
             }
         }*/
 
-        // Configures source set directory.
+        // Configures source set directory. 这就是指定c,cpp源文件的目录，不过还是很懂
         sources {
             main {
                 jni {
