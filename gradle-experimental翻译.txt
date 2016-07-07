@@ -1,0 +1,647 @@
+官方文档
+http://tools.android.com/tech-docs/new-build-system/gradle-experimental
+Android Studio使用gradle-experimental构建NDK工程
+http://www.jianshu.com/p/7844aafe897d
+NDk调试
+http://www.jianshu.com/p/178a2169b7ff
+
+http://tools.android.com/tech-docs/android-ndk-preview
+
+
+Introduction
+介绍
+
+The new experimental plugin is based on Gradle’s new component model mechanism, 
+这新的体验插件基于Gradle的组件模块新机制
+while allows significant reduction in configuration time. It also includes NDK integration for building JNI applications. 
+明显地降配置时间的同时，它还为建立JNI程序包括了NDK的整合。
+This user guides provides details on how to use it and highlights the difference between the new plugin and the original plugin.
+这个使用向导提供怎样使用详情和新插件与原始插件的区别说明
+
+CAVEAT: Note that this plugin is a preview of the plugin for feedback on performance and NDK integration. 
+警告：请注意这插件是一个”预演“，用于性能反馈和NDK整合。
+ The Gradle API for the new component model is not final, which means each plugin will only work with a specific version of Gradle.
+ 为组件模块化弄出来的Gradle API并不是最终的，这意味着每一个插件只能在指定版本的Gradle里正常工作。
+Additionally, the DSL may also change.
+另外，DSL也可能会改变
+
+Latest Version
+最近版本
+Please check the bintray repository for the latest version.
+请去查看“bintray repository”，获取最新的版本。
+
+Requirements
+要求
+
+Gradle (see section below for version required)
+Gradle（看下面版本要求部分）
+Android NDK r10e (if you are using NDK)
+android ndk r10e （如果你正在使用NDK）
+SDK with Build Tools at least version 19.0.0 and we aim to minimize the amount of changes needed for the migration process in the future. 
+SDK的Build Tools要求的最低版本是19.0.0，将来迁移的时候，我们会尽量减少需要改变的地方
+
+Some features may require a more recent version.
+有一些功能可能需要更新的版本
+
+ Plugin Version	 Gradle Version
+ 0.1.0	         2.5
+ 0.2.0	         2.5
+ 0.3.0-alpha3	 2.6
+ 0.4.0	         2.8
+ 0.6.0-alpha1	 2.8
+ 0.6.0-alpha5	 2.10
+ 0.7.0-alpha1	 2.10 
+ 
+Migrating from Traditional Android Gradle Plugin
+在传统android gradle 插件环境下迁移
+A typical Android Studio project may have a directory structure as follows. File that needs to be change is highlighted in red:
+一个典型的Android Studio项目的目录结构一般像下面所示那样的。红色高亮的是需要修改的文件。
+There are some significant changes in the DSL between the new plugin and the traditional one.
+在新插件和传统的插件间有要注意的DSL（领域特定语言）改变
+
+.
+├── app/
+│   ├── app.iml
+│   ├── build.gradle
+│   └── src/
+├── build.gradle
+├── gradle/
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── gradle.properties
+├── gradlew*
+├── gradlew.bat
+├── local.properties
+├── MyApplication.iml
+└── settings.gradle
+
+./gradle/wrapper/gradle-wrapper.properties
+Each version of the new plugin supports a specific Gradle version.  Consult Gradle Requirements for the Gradle version to use.
+每个版本的新插件只支持特定的Gradle版本，查看Gradle需求以获得对应该的Gradle version
+
+#Wed Apr 10 15:27:10 PDT 2013
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-2.10-all.zip
+
+
+./build.gradle
+Classpath for the plugin is com.android.tools.build:gradle-experimental instead of com.android.tools.build:gradle.
+在Classpath那里，用com.android.tools.build:gradle-experimental代替com.android.tools.build:gradle
+
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle-experimental:0.7.0-alpha4"
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+    }
+}
+
+./app/build.gradle
+There are significant changes to the DSL of the plugin. 
+插件的DSL值得注意的更改
+We understand that many of the changes are frustrating and seem unnecessary, 
+我们知道很多更改令人不爽面，而且看起来没有必要
+and our goal is to remove some of these current changes to minimize the migration process from the traditional plugin in the future.
+我们的目标是去掉现在的这些更改，尽力减少迁移进程。
+
+NOTE: There has been significant DSL improvements starting from version 0.6.0-alpha5 compare to previous versions. 
+注意：对比之前的版本从0.6.0-alpha5开始已经有了显著的进步
+The example code here will not work for previous version. 
+这些代码的例子在之前的版本是不起作用的 
+If you are using an older version of the plugin.  Please refer to the user guide at https://sites.google.com/a/android.com/tools/tech-docs/new-build-system/gradle-experimental/0-4-0.
+如果你用的是旧版的插件，请去看这个说明 https://sites.google.com/a/android.com/tools/tech-docs/new-build-system/gradle-experimental/0-4-0.
+
+DSL Changes:
+DSL的更改
+    Plugin name is com.android.model.application instead of com.android.application. 
+    插件名称，用com.android.model.application代替com.android.application
+Or use apply plugin: "com.android.model.library" if you want to create an Android aar library.
+或者是com.android.model.library，如用你想建立一个Android aar  library（arr比jar有更多的资源）
+
+    Configuration is wrapped with the model { } block
+    要配置的包括在model { }区域里
+    Adding elements to a Collection should be done using the add method.
+    应该用add方法来添加元素到Collection里
+
+Current DSL Limitations that will hopefully go away:
+当前的DSL限制，有望88
+    List properties are only set with their direct types only, with no way to accept other types and adapting them.
+    属性列表只能设置他们直接类型，不能接受别的类型，也不去需要适应他们了
+For instance:You can set a property of type File using a String, but a property of type List<File> accepts only File objects.
+如：你可以用字符串设置文件类型的属性，不过这个List<File>属性只能是文件对象
+    Creating a buildType or productFlavor requires calling the create method.  Modifying an existing one such as the release and debug buildType can be done using the just the name.
+    创建一个buildType或productFlavor需要调用create方法。修改一个现成的东西，如release和debug buildType只要用其名称就可以了
+    The DSL for modifying variants and their tasks is very, very limited right now.
+    更改变量和他们task的DSL已经很少了，现在
+
+apply plugin: "com.android.model.application"
+
+apply plugin: "com.android.model.application"
+
+model {
+    android {
+        compileSdkVersion 23
+        buildToolsVersion "23.0.2"
+
+        defaultConfig {
+            applicationId "com.example.user.myapplication"
+            minSdkVersion.apiLevel 15
+            targetSdkVersion.apiLevel 22
+            versionCode 1
+            versionName "1.0"
+
+            buildConfigFields {
+                create() {
+                    type "int"
+                    name "VALUE"
+                    value "1"
+                }
+            }
+        }
+        buildTypes {
+             release {
+                 minifyEnabled false
+                 proguardFiles.add(file("proguard-rules.pro"))
+             }
+        }
+        productFlavors {
+         create("flavor1") {
+             applicationId "com.app"
+         }
+     }
+    
+     // Configures source set directory.
+     sources {
+         main {
+             java {
+                 source {
+                     srcDir "src"
+                 }
+             }
+         }
+     }
+    }   
+}
+
+dependencies {
+    compile fileTree(dir: "libs", include: ["*.jar"])
+    compile "com.android.support:appcompat-v7:22.2.0"
+}
+
+
+
+Signing Config
+签名设置
+You can refer to another model element using the $() syntax.  
+你可以用$()语法关联别的模块元素
+To use this syntax, "-Dorg.gradle.model.dsl=true" has to be added as an argument to the Gradle command line for version below 2.10. 
+要用这个语法，Gradle版本低于2.10的，要在Gradle的命令行里加入这个参数"-Dorg.gradle.model.dsl=true"
+This is useful for specifying signing configs.  
+这用于指定特定签名设置
+NOTE: android.signingConfigs currently must be outside of the android {} block.
+注意：android.signingConfigs当前必须在android {}区域外
+
+apply plugin: "com.android.model.application"
+
+model {
+    android {
+        compileSdkVersion 23
+        buildToolsVersion "23.0.2"
+        buildTypes {
+            release {
+                signingConfig = $("android.signingConfigs.myConfig")
+            }
+        }
+    }
+    android.signingConfigs {
+        create("myConfig") {
+            storeFile "/path/to/debug.keystore"
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+            storeType "jks"
+        }
+    }
+}
+
+Ndk Integration
+整合NDK
+The experimental plugin comes with NDK integration for creating native applications.  
+为了创建native applications，这个实验性的插件有NDK整合功能
+To use the NDK integration:Use the SDK Manager inside Studio to download the NDK.
+NDK 整合方法：用Studio的SDK Manager下载NDK
+Set ndk.dir in local.properties or the ANDROID_NDK_HOME environment variable to the directory containing the NDK.
+在local.properties里设置NDK.dir(目录)，或设置环境变量ANDROID_NDK_HOME包含NDK所在目录
+Add an android.ndk block to the model in build.gradle. 
+在build.gradler的modle区域里加入android.ndk
+The build.gradle of a simple NDK application may look like this:
+例子如下
+
+
+apply plugin: 'com.android.model.application'
+
+model {
+    android {
+        compileSdkVersion 23
+        buildToolsVersion "23.0.2"
+        ndk {
+            moduleName "native"
+        }
+    }
+}
+
+*Note that the moduleName is required.  It determines the name of the resulting native library.
+注意moduleName是必须的，它确定resulting native library的名称
+
+
+Source Set
+资源设置
+
+By default, it will look in src/main/jni for C/C++ file.  Configure android.sources to change the source directory.
+默认情况下，C/C++文件在这样的目录结构下：src/main/jni。配置android.sources可以改变源文件目录
+model {
+    android {
+        compileSdkVersion 23
+        buildToolsVersion "23.0.2"
+        ndk {
+            moduleName "native"
+        }
+        sources {
+            main {
+                jni {
+                    source {
+                        srcDir "src"
+                    }
+                }
+            }
+        }
+    }
+}
+
+The JNI source set may contain both C and C++ files.  All files in the sub-directories are included.  
+JNI源设置可能包括C和C++文件。所有在子目录的文件都会被包含（included）
+Files with extension '.c' is considered as C files, whereas C++ files has may have any of the following extensions: '.C', '.CPP', 'c++', '.cc, '.cp', '.cpp', '.cxx'.  
+扩展名是'.c'的被认为是C文件，C++文件可以有以下的扩展名：'.C', '.CPP', 'c++', '.cc, '.cp', '.cpp', '.cxx'.  
+Files may be excluded with the exclude method, whereas include is ignored:
+exclude方法可以排除文件，鉴于include是忽略（whereas include is ignored）
+
+model {    
+    android.sources {
+        main {
+            jni {
+                source {
+                    include "someFile.txt"  // This is ignored.
+                    exclude "**/excludeThisFile.c"
+                }
+            }
+        }
+    }
+}
+
+
+Other Build Options
+其实Build选项
+
+Various build options can be set within the android.ndk { } block.  For example, 
+各种各样的build选项都可以在android.ndk { }区域内设置，如：
+model {
+    android {
+        compileSdkVersion 23
+        buildToolsVersion "23.0.2"
+        ndk {
+            // All configurations that can be changed in android.ndk.所有的配置可以android.ndk里修改
+            moduleName "native"
+            toolchain "clang"
+            toolchainVersion "3.5"
+            // Note that CFlags has a capital C, which is inconsistent with 注意CFlags的C是大写的，
+            // the naming convention of other properties.  This is a 为了区分别的原习俗上别的属性上的名称
+            // technical limitation that will be resolved 这是一个技术上的限制，将来会被解决的。
+            CFlags.add("-DCUSTOM_DEFINE")
+            cppFlags.add("-DCUSTOM_DEFINE")
+            ldFlags.add("-L/custom/lib/path")
+            ldLibs.add("log")
+            stl "stlport_static"
+        }
+        buildTypes {
+            release {
+                ndk {
+                    debuggable true
+                }
+            }
+        }
+        productFlavors {
+            create("arm") {
+                ndk {
+                    // You can customize the NDK configurations for each 你为每一productFlavors和buildTypes定制NDK的配置
+                    // productFlavors and buildTypes.
+                    abiFilters.add("armeabi-v7a")
+                }
+            }
+            create("fat") {
+                // If ndk.abiFilters is not configured, the application 如ndk.abiFilters没有设置，这个程序编译和打包所有支持的ABI
+                // compile and package all suppported ABI.
+            }
+        }
+    }
+
+    // You can modify the NDK configuration for each variant. 你可以修改每一个NDK配置的变量
+    components.android {
+        binaries.afterEach { binary ->
+            binary.mergedNdkConfig.cppFlags.add(
+                    "-DVARIANT=\"" + binary.name + "\"")
+        }
+    }
+}
+
+ABI Specific Configurations
+特定的ABI配置
+
+You can configure the settings for a specific ABI.
+可以为特定的ABI配置设置
+
+model {
+    android {
+        compileSdkVersion 23
+        buildToolsVersion "23.0.2"
+        ndk {
+            moduleName "native"
+        }
+        abis {
+            create("x86") {
+                platformVersion "android-19"  // platformVersion option is available from 0.8.0. 从0.8.0开始，platformVersion可以被使用
+                CFlags.add("-DX86")
+            }
+        }
+    }
+}
+
+Known Limitations 已知的限制
+
+No support for using a NDK modules like cpu_features
+不支持NDK modules的使用，如cpu_features
+No support for integrating external build systems.
+不支持集成外部的build系统
+
+Samples 例子
+Additional samples can be found at https://github.com/googlesamples/android-ndk
+额外的例子可以在这找到https://github.com/googlesamples/android-ndk
+
+
+Multiple NDK Projects
+多NDK项目
+
+Plugin 0.4.0 added the preliminary support for NDK dependencies and the ability to create just a native library. 
+0.4.0对NDK增加了初步支持，只可以建立一个native library
+Please be aware this is a preview of the direction we are going and the implementation is not complete.  
+请明白这是一个我们方向的预览，离实现还有距离，没完成
+Note that while it is possible to compile the native project for Gradle, editing and debugging support in Android Studio is not yet implemented.
+注意，可以在Gradle下编译native project，但在Android Studio下还不支持编辑和调试
+
+Standalone NDK Plugin
+独立的NDK插件
+In gradle-experimental:0.4.0, a new plugin is created to allow creation of just the native library without creating an Android application or library. 
+在gradle实验版0.4.0， 可以创建native library，但不可以创建android应用或android库
+The DSL is similar to the application/library plugin.  The following example build.gradle can create a libhello.so from sources in "src/main/jni"
+DSL语言和application/library plugin是相似的。下面的build.gradle例子可以创建来自src/main/jni下的源文件的libhello.so
+
+apply plugin: "com.android.model.native"
+
+model {
+    android {
+        compileSdkVersion 23
+        ndk {
+            moduleName "hello"
+        }
+    }
+}
+
+Known Issues
+已经问题
+Editing support for the standalone plugin is not yet implemented in Android Studio
+在Android Studio里，编辑独立的插件还不支持
+Modifying a source file in the library does not automatically cause the application to re-link the new library when building an application.
+修改一个库里的源文件不会自动化，由于程序要重新连接新的库，当创建一个应用时
+
+
+NDK Dependencies
+NDK的依赖
+The syntax for specifying dependency follows the style of Gradle's future dependency system.  You can set a dependency on an Android project or a specific file.
+批定依赖的语法和Gradle's的是一样的。你可以在android项目里设置一个依赖，或指定一个文件
+For example, let say you have a subproject in "lib" using the standalone NDK plugin:
+如：假如你有一个子项目在“lib”里（用独立的NDK插件的环境下）
+
+lib/build.gradle:
+apply plugin: "com.android.model.native"
+
+model {
+    android {
+        compileSdkVersion 23
+     ndk {
+         moduleName "hello"
+     }
+     sources {
+         main {
+             jni {
+                 exportedHeaders {
+                     srcDir "src/main/headers"
+                 }
+             }
+         }
+     }
+    }
+}
+
+Any projects with a JNI dependency will include the directories specified in the exportedHeaders..  
+依赖于JNI的项目会包涵那些你在exportedHeaders指定的目录
+You can add dependency on the lib project from your application for your JNI code:
+在你的应用里，你可以在库项目里为你的JNI代码添加依赖
+
+
+app/build.gradle:
+apply plugin: "com.android.model.application"
+
+model {
+    android {
+        compileSdkVersion 23
+        buildToolsVersion "23.0.2"
+     sources {
+         main {
+             jni {
+                 dependencies {
+                     project ":lib1"
+                 }
+             }
+         }
+     }
+    }
+}
+
+You can specify a build type and/or product flavor of your target project.  
+你可以为你的项目指定一个buildType和/或productFlavor
+Otherwise, the plugin will try to find the same build types and product flavor as your application. 
+否则，插件会试图寻找和你的应用一样的buildType和productFlavor
+You can also specify the linkage type if you would like the native library to be linked statically.  E.g.
+你也可以指定linkage类型，如果你想 native库静态地连接。如：
+ 
+model {
+    android.sources {
+        main {
+            jni {
+                dependencies {
+                    project ":lib1" buildType "debug" productFlavor "flavor1" linkage "static"
+                }
+            }
+        }
+    }
+}
+
+To declare a dependency on a file, create a prebuilt library and add dependency on the library.  E.g.,
+在一个文件里声明依赖，创建一个预建库，然后在库里添加依赖。如：
+model {
+    repositories {
+        libs(PrebuiltLibraries) {
+            prebuilt {
+                headers.srcDir "path/to/headers"
+                binaries.withType(SharedLibraryBinary) {
+                    sharedLibraryFile = file("lib/${targetPlatform.getName()}/prebuilt.so")
+                }
+            }
+        }
+    }
+    android.sources {
+        main {
+            jniLibs {
+                dependencies {
+                    library "prebuilt"
+                }
+            }
+        }
+    }
+}
+
+You can add native dependency to either 'jniLibs' or 'jni' source set.  
+你可以在'jniLibs'或'jni'源集里，添加本地依赖
+When dependency is added to "jniLibs" the native library will be package into the application/library, 
+当依赖被加到"jniLibs"，本地的库会在application/library里打包
+but it will not be used for compiling the JNI code.  E.g.
+但不会用来编译JNI代码。如：
+model {
+    android.sources {
+        main {
+            jniLibs {
+                dependencies {
+                    library "prebuilt"
+                }
+            }
+        }
+    }
+}
+
+DSL Change
+DSL语言的改变
+
+The plugin is still in experimental stage. DSL will change throughout the development of the plugin.
+插件还是在实验阶段，在其开发过程中，DSL会改变的
+This section documents the changes that occurs between different versions to help with migration.
+这部分文档，记录不同版本间的改变，用以帮助整合。
+
+0.6.0-alpha1 -> 0.6.0-alpha5
+
+Plugin now requires Gradle 2.10, which brings significant improvements to DSL
+Configurations can now be nested. E.g. you can write
+android {
+    buildTypes {
+        ...
+    }
+}
+instead of:
+android.buildTypes {
+    ...
+}
+File type now accepts a string, but String cannot be added to List<File> at the moment.
+-Dorg.gradle.model=true is now the default. This allows references to other model, but the model being referred to must be in a separate block.
+The equal sign '=' is no longer required for most properties.
+
+
+0.4.x -> 0.6.0-alpha1
+
+The DSL for specifying dependencies on a specific library files have changed to follow Gradle's native dependency DSL.  (see https://github.com/gradle/gradle/blob/master/subprojects/docs/src/samples/native-binaries/prebuilt/build.gradle)
+model {
+    android.sources {
+        main {
+            jniLibs {
+                dependencies {
+                    library file("lib/x86/prebuilt.so") abi "x86"
+                    library file("lib/armeabi-v7a/prebuilt.so") abi "armeabi-v7a"
+                    library file("lib/mips/prebuilt.so") abi "mips"
+                }
+            }
+        }
+    }
+}
+    is replaced by:
+model {
+    repositories {
+        prebuilt(PrebuiltLibraries) {
+            binaries.withType(SharedLibraryBinary) {
+                sharedLibraryFile = file("lib/${targetPlatform.getName()}/prebuilt.so")
+            }
+        }
+    }
+    android.sources {
+        main {
+            jniLibs {
+                dependencies {
+                    library "prebuilt"
+                }
+            }
+        }
+    }
+}
+0.2.x -> 0.4.0
+
++= no longer works for collections.  Adding items to the list can be done with the 'add' or 'addAll' method.  e.g. CFlags += "-DCUSTOM_DEFINE" can be replaced with CFlags.add("-DCUSTOM_DEFINE")
+0.1.x -> 0.2.x
+
+jniDebuggable is removed from build type configuration and moved to the ndk block.  e.g.
+release {
+    jniDebuggable = true
+}
+becomes
+release {
+    ndk.with {
+        debuggable = true
+    }
+}
+
+Change Log
+
+0.6.0-alpha3
+
+DSL for specifying prebuilt libraries dependency has been changed.
+Updated to Gradle 2.8.
+Fixed various issues with native library dependency resolution.
+0.4.0
+
+Fixed issue with using jni code in experimental library plugin.
+Allow platform version to be set separately from compileSdkVersion.
+Allow ABI specific configurations in a variant that contains multiple ABI.
+Added support for dependencies on NDK plugin and shared object/static library files.
+A preview version of an standalone plugin for compiling just native code is now available.  It can be use to build application with Gradle, but support in Android Studio is not yet implemented.
+
