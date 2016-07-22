@@ -47,7 +47,7 @@ model{
             }
         }*/
 
-        // Configures source set directory. 这就是指定c,cpp源文件的目录，不过还是很懂
+        // Configures source set directory. 这就是指定c,cpp源文件的目录，不过还不是很懂
         sources {
             main {
                 jni {

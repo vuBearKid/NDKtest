@@ -25,3 +25,7 @@ Java_link_vu1984_ndk_VUCpp_StrFromJni(JNIEnv *env, jclass type, jint which) {
 
 }
 
+JNIEXPORT jstring JNICALL
+Java_link_vu1984_ndk_VUCpp_abc(JNIEnv *env, jclass type){
+    return (*env)->NewStringUTF(env, "ABC");
+}

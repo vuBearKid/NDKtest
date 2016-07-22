@@ -1,7 +1,7 @@
 package link.vu1984.ndk;
 
 /**
- * Created by Administrator on 2016/7/6.
+ * Java_full_package_name_className_functionName()
  */
 public class VUCpp {
     static {
@@ -12,5 +12,6 @@ public class VUCpp {
 
     public static native String StrFromJni(int which);
 
+    public static native String abc();
 
 }
